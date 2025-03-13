@@ -1,5 +1,5 @@
 mapboxgl.accessToken =
-      "pk.eyJ1IjoiZW5oZGxlc3MiLCJhIjoiY2ttbzFrbGYyMDJkdTJ2cmtxcmpsMDBqNyJ9.exkUgXdwQ0bYXxrGS1L73A";
+      "pk.eyJ1IjoiZW5oZGxlc3MiLCJhIjoiY204ODBjcDNxMGt0YTJpcHFjZHBjdTh3OSJ9.6tKsfCJRlqU9nuSbZyS9bg";
 
 const TARGET = TARGET_LOCATIONS.find(loc => loc.name === "Manhattan East Village")
 const map = new mapboxgl.Map({
