@@ -1,28 +1,47 @@
 mapboxgl.accessToken =
-      "pk.eyJ1IjoiZW5oZGxlc3MiLCJhIjoiY2ttbzFrbGYyMDJkdTJ2cmtxcmpsMDBqNyJ9.exkUgXdwQ0bYXxrGS1L73A";
+  "pk.eyJ1IjoiZW5oZGxlc3MiLCJhIjoiY2ttbzFrbGYyMDJkdTJ2cmtxcmpsMDBqNyJ9.exkUgXdwQ0bYXxrGS1L73A";
 
 const TARGET = TARGET_LOCATIONS.find(loc => loc.name === "Manhattan East Village")
 const map = new mapboxgl.Map({
   container: 'map',
   style: "mapbox://styles/mapbox/light-v10",
   center: [TARGET.lon, TARGET.lat],
-  zoom: 13
+  zoom: 15
 });
 
+const convertFeaturesToCombinedFeatureCollection = (features) => turf.combine(turf.featureCollection(features))
+
+const targetIsochrones = convertFeaturesToCombinedFeatureCollection(
+  TARGET_LOCATIONS.flatMap(loc => loc.isochrone.features)
+)
+const traderJoesIsochrones = convertFeaturesToCombinedFeatureCollection(
+  TRADER_JOES_LOCATIONS.flatMap(loc => loc.isochrone.features)
+)
 
 map.on("load", () => {
+
+  map.addSource("intersection", {
+    type: "geojson",
+    data: {
+      type: "FeatureCollection",
+      features: []
+    }
+  });
+
+  const buildings = convertFeaturesToCombinedFeatureCollection(
+    map.queryRenderedFeatures({ layers: ["building"] })
+  );
+  console.log(buildings)
+
+  const intersection = turf.intersect(turf.featureCollection([...targetIsochrones.features, ...buildings.features, ...traderJoesIsochrones.features]));
+  map.getSource("intersection").setData(intersection);
+
   map.addLayer({
-    id: "isoLayer",
+    id: "intersectionLayer",
     type: "fill",
-    source: {
-      type: "geojson",
-      data: {
-        type: "FeatureCollection",
-        features: TARGET_LOCATIONS.flatMap(loc => loc.isochrone.features)
-      }
-    },
+    source: "intersection",
     paint: {
-      "fill-color": "red",
+      "fill-color": "purple",
       "fill-opacity": 0.3
     }
   });
@@ -32,13 +51,22 @@ map.on("load", () => {
     type: "fill",
     source: {
       type: "geojson",
-      data: {
-        type: "FeatureCollection",
-        features: TRADER_JOES_LOCATIONS.flatMap(loc => loc.isochrone.features)
-      },
+      data: traderJoesIsochrones,
     },
     paint: {
       "fill-color": "blue",
+      "fill-opacity": 0.3
+    }
+  });
+  map.addLayer({
+    id: "targetIsochrones",
+    type: "fill",
+    source: {
+      type: "geojson",
+      data: targetIsochrones,
+    },
+    paint: {
+      "fill-color": "red",
       "fill-opacity": 0.3
     }
   });
@@ -60,7 +88,7 @@ TRADER_JOES_LOCATIONS.forEach((place) =>
 // SUBWAY LINES
 // from https://github.com/chriswhong/mapboxgl-nyc-subway/blob/master/js/scripts.js
 map.on('style.load', () => {
-    // add geojson sources for subway routes and stops
+  // add geojson sources for subway routes and stops
   map.addSource('nyc-subway-routes', {
     type: 'geojson',
     data: 'subway-data/nyc-subway-routes.geojson'
